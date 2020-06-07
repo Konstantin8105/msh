@@ -52,10 +52,10 @@ type Msh struct {
 	Triangles []Triangle
 }
 
-func (m Msh) PointsById(pIds [3]int)(ps [3]Point){
-	for index,id := range pIds{
-		for j := range m.Points{
-			if i== m.Points[j].Id{
+func (m Msh) PointsById(pIds [3]int) (ps [3]Point) {
+	for index, id := range pIds {
+		for j := range m.Points {
+			if id == m.Points[j].Id {
 				ps[index] = m.Points[j]
 				break
 			}
@@ -64,7 +64,18 @@ func (m Msh) PointsById(pIds [3]int)(ps [3]Point){
 	return
 }
 
+func (m *Msh) RotateXOY90deg() {
+	for i := range m.Points {
+		m.Points[i].X, m.Points[i].Y = m.Points[i].Y, m.Points[i].X // swap
+	}
+}
 
+func (m *Msh) MoveXOY(x, y float64) {
+	for i := range m.Points {
+		m.Points[i].X += x
+		m.Points[i].Y += y
+	}
+}
 
 func New(geoContent string) (m *Msh, err error) {
 	// create temp directory
