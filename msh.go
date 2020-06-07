@@ -52,6 +52,20 @@ type Msh struct {
 	Triangles []Triangle
 }
 
+func (m Msh) PointsById(pIds [3]int)(ps [3]Point){
+	for index,id := range pIds{
+		for j := range m.Points{
+			if i== m.Points[j].Id{
+				ps[index] = m.Points[j]
+				break
+			}
+		}
+	}
+	return
+}
+
+
+
 func New(geoContent string) (m *Msh, err error) {
 	// create temp directory
 	var dir string
