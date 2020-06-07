@@ -3,6 +3,7 @@ package msh
 import (
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/Konstantin8105/errors"
+	"github.com/Konstantin8105/pow"
 )
 
 const (
@@ -67,6 +69,16 @@ func (m Msh) PointsById(pIds [3]int) (ps [3]Point) {
 func (m *Msh) RotateXOY90deg() {
 	for i := range m.Points {
 		m.Points[i].X, m.Points[i].Y = m.Points[i].Y, m.Points[i].X // swap
+	}
+}
+
+func (m *Msh) RotateXOY(a float64) {
+	for i := range m.Points {
+		x, y := m.Points[i].X, m.Points[i].Y
+		ampl := math.Sqrt(pow.E2(x) + pow.E2(y))
+		angle := math.Atan2(y, x) + a
+		m.Points[i].X = ampl * math.Sin(angle)
+		m.Points[i].Y = ampl * math.Cos(angle)
 	}
 }
 
