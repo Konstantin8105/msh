@@ -77,8 +77,8 @@ func (m *Msh) RotateXOY(a float64) {
 		x, y := m.Points[i].X, m.Points[i].Y
 		ampl := math.Sqrt(pow.E2(x) + pow.E2(y))
 		angle := math.Atan2(y, x) + a
-		m.Points[i].X = ampl * math.Sin(angle)
-		m.Points[i].Y = ampl * math.Cos(angle)
+		m.Points[i].X = ampl * math.Cos(angle)
+		m.Points[i].Y = ampl * math.Sin(angle)
 	}
 }
 

@@ -2,9 +2,11 @@ package msh_test
 
 import (
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/Konstantin8105/msh"
+	"github.com/Konstantin8105/pow"
 )
 
 func Test(t *testing.T) {
@@ -32,4 +34,75 @@ func Test(t *testing.T) {
 	}
 
 	t.Logf("%#v", msh)
+}
+
+func TestRotateXOY(t *testing.T) {
+	tcs := []struct {
+		angle  float64
+		point  msh.Point
+		expect msh.Point
+	}{
+		{
+			angle:  0.0,
+			point:  msh.Point{X: 1, Y: 0},
+			expect: msh.Point{X: 1, Y: 0},
+		},
+		{
+			angle:  0.0,
+			point:  msh.Point{X: 1, Y: 1},
+			expect: msh.Point{X: 1, Y: 1},
+		},
+		{
+			angle:  0.0,
+			point:  msh.Point{X: 0, Y: 1},
+			expect: msh.Point{X: 0, Y: 1},
+		},
+		{
+			angle:  0.0,
+			point:  msh.Point{X: -1, Y: 0},
+			expect: msh.Point{X: -1, Y: 0},
+		},
+		{
+			angle:  0.0,
+			point:  msh.Point{X: -1, Y: -1},
+			expect: msh.Point{X: -1, Y: -1},
+		},
+		{
+			angle:  0.0,
+			point:  msh.Point{X: 0, Y: -1},
+			expect: msh.Point{X: 0, Y: -1},
+		},
+		{
+			angle:  math.Pi / 2.0,
+			point:  msh.Point{X: 1, Y: 0},
+			expect: msh.Point{X: 0, Y: 1},
+		},
+		{
+			angle:  -math.Pi / 2.0,
+			point:  msh.Point{X: 1, Y: 0},
+			expect: msh.Point{X: 0, Y: -1},
+		},
+		{
+			angle:  -math.Pi / 2.0,
+			point:  msh.Point{X:-0.01730271278289151,Y: -0.04784164326597217},
+			expect: msh.Point{X:-0.04784164326597217,Y: +0.01730271278289151},
+		},
+	}
+	eps := 1e-6
+	for index, tc := range tcs {
+		t.Run(fmt.Sprintf("%d", index), func(t *testing.T) {
+			m := msh.Msh{
+				Points: []msh.Point{
+					tc.point,
+				},
+			}
+			m.RotateXOY(tc.angle)
+			act := m.Points[0]
+			actEps := math.Sqrt(pow.E2(tc.expect.X-act.X) + pow.E2(tc.expect.Y-act.Y))
+			t.Logf("actual exp %e", actEps)
+			if actEps > eps {
+				t.Errorf("act = %#v\nexpect = %#v", act, tc.expect)
+			}
+		})
+	}
 }
