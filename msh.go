@@ -66,12 +66,6 @@ func (m Msh) PointsById(pIds [3]int) (ps [3]Point) {
 	return
 }
 
-func (m *Msh) RotateXOY90deg() {
-	for i := range m.Points {
-		m.Points[i].X, m.Points[i].Y = m.Points[i].Y, m.Points[i].X // swap
-	}
-}
-
 func (m *Msh) RotateXOY(a float64) {
 	for i := range m.Points {
 		x, y := m.Points[i].X, m.Points[i].Y
