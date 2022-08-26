@@ -2,14 +2,13 @@ package msh_test
 
 import (
 	"fmt"
-	"math"
+	"os"
 	"testing"
 
 	"github.com/Konstantin8105/msh"
-	"github.com/Konstantin8105/pow"
 )
 
-func Test(t *testing.T) {
+func Example() {
 	var geo string
 	geo += fmt.Sprintf("h   = %.5f;\n", 10.0)
 	geo += fmt.Sprintf("thk = %.5f;\n", 5.00)
@@ -20,89 +19,105 @@ func Test(t *testing.T) {
 	Point(001) = {thk    ,+0.0000,+0.0000,Lc};
 	Point(002) = {+0.0000,h      ,+0.0000,Lc};
 	Point(003) = {thk    ,h      ,+0.0000,Lc};
+	Physical Point("NODE002") = {002};
 	Line(1) = {1, 3};
+	Physical Curve("LINE001") = {1};
 	Line(2) = {0, 2};
+	Physical Curve("LINE002") = {2};
 	Line(3) = {0, 1};
+	Physical Curve("LINE003") = {3};
 	Line(4) = {2, 3};
+	Physical Point("NODE003") = {003};
 	Line Loop(5) = {1, -4, -2, 3};
+	Physical Point("NODE001") = {001};
 	Plane Surface(6) = {5};
-`
+	Physical Surface("PLANE006") = {6};`
+
+	mshContent, err := msh.Generate(geo)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Fprintf(os.Stdout, "%v", mshContent)
 
 	msh, err := msh.New(geo)
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
+	fmt.Fprintf(os.Stdout, "%s", msh)
 
-	t.Logf("%#v", msh)
+	// Output:
+	// $MeshFormat
+	// 2.2 0 8
+	// $EndMeshFormat
+	// $PhysicalNames
+	// 7
+	// 0 1 "NODE002"
+	// 0 5 "NODE003"
+	// 0 6 "NODE001"
+	// 1 2 "LINE001"
+	// 1 3 "LINE002"
+	// 1 4 "LINE003"
+	// 2 7 "PLANE006"
+	// $EndPhysicalNames
+	// $Nodes
+	// 5
+	// 1 0 0 0
+	// 2 5 0 0
+	// 3 0 10 0
+	// 4 5 10 0
+	// 5 2.5 5 0
+	// $EndNodes
+	// $Elements
+	// 10
+	// 1 15 2 6 1 2
+	// 2 15 2 1 2 3
+	// 3 15 2 5 3 4
+	// 4 1 2 2 1 2 4
+	// 5 1 2 3 2 1 3
+	// 6 1 2 4 3 1 2
+	// 7 2 2 7 6 1 2 5
+	// 8 2 2 7 6 4 3 5
+	// 9 2 2 7 6 3 1 5
+	// 10 2 2 7 6 2 4 5
+	// $EndElements
+	// $PhysicalNames
+	// 7
+	// 0 1 "NODE002"
+	// 0 5 "NODE003"
+	// 0 6 "NODE001"
+	// 1 2 "LINE001"
+	// 1 3 "LINE002"
+	// 1 4 "LINE003"
+	// 2 7 "PLANE006"
+	// $EndPhysicalNames
+	// $Nodes
+	// 5
+	// 1 0.000000 0.000000 0.000000
+	// 2 5.000000 0.000000 0.000000
+	// 3 0.000000 10.000000 0.000000
+	// 4 5.000000 10.000000 0.000000
+	// 5 2.500000 5.000000 0.000000
+	// $EndNodes
+	// $Elements
+	// 10
+	// 1 15 2 6 1 2
+	// 2 15 2 1 2 3
+	// 3 15 2 5 3 4
+	// 4 1 2 2 1 2 4
+	// 5 1 2 3 2 1 3
+	// 6 1 2 4 3 1 2
+	// 7 2 2 7 6 1 2 5
+	// 8 2 2 7 6 4 3 5
+	// 9 2 2 7 6 3 1 5
+	// 10 2 2 7 6 2 4 5
+	// $EndElements
 }
 
-func TestRotateXOY(t *testing.T) {
-	tcs := []struct {
-		angle  float64
-		point  msh.Point
-		expect msh.Point
-	}{
-		{
-			angle:  0.0,
-			point:  msh.Point{X: 1, Y: 0},
-			expect: msh.Point{X: 1, Y: 0},
-		},
-		{
-			angle:  0.0,
-			point:  msh.Point{X: 1, Y: 1},
-			expect: msh.Point{X: 1, Y: 1},
-		},
-		{
-			angle:  0.0,
-			point:  msh.Point{X: 0, Y: 1},
-			expect: msh.Point{X: 0, Y: 1},
-		},
-		{
-			angle:  0.0,
-			point:  msh.Point{X: -1, Y: 0},
-			expect: msh.Point{X: -1, Y: 0},
-		},
-		{
-			angle:  0.0,
-			point:  msh.Point{X: -1, Y: -1},
-			expect: msh.Point{X: -1, Y: -1},
-		},
-		{
-			angle:  0.0,
-			point:  msh.Point{X: 0, Y: -1},
-			expect: msh.Point{X: 0, Y: -1},
-		},
-		{
-			angle:  math.Pi / 2.0,
-			point:  msh.Point{X: 1, Y: 0},
-			expect: msh.Point{X: 0, Y: 1},
-		},
-		{
-			angle:  -math.Pi / 2.0,
-			point:  msh.Point{X: 1, Y: 0},
-			expect: msh.Point{X: 0, Y: -1},
-		},
-		{
-			angle:  -math.Pi / 2.0,
-			point:  msh.Point{X:-0.01730271278289151,Y: -0.04784164326597217},
-			expect: msh.Point{X:-0.04784164326597217,Y: +0.01730271278289151},
-		},
+func TestFail(t *testing.T) {
+	if _, err := msh.New("fail"); err == nil {
+		t.Fatal("New")
 	}
-	eps := 1e-6
-	for index, tc := range tcs {
-		t.Run(fmt.Sprintf("%d", index), func(t *testing.T) {
-			m := msh.Msh{
-				Points: []msh.Point{
-					tc.point,
-				},
-			}
-			m.RotateXOY(tc.angle)
-			act := m.Points[0]
-			actEps := math.Sqrt(pow.E2(tc.expect.X-act.X) + pow.E2(tc.expect.Y-act.Y))
-			t.Logf("actual exp %e", actEps)
-			if actEps > eps {
-				t.Errorf("act = %#v\nexpect = %#v", act, tc.expect)
-			}
-		})
+	if _, err := msh.Generate("fail"); err == nil {
+		t.Fatal("Generate")
 	}
 }

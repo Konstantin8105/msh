@@ -1,89 +1,122 @@
+// The MSH file format version 2:
+//
+// https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format-version-2-_0028Legacy_0029
+//
+//	$MeshFormat
+//	version-number file-type data-size
+//	$EndMeshFormat
+//
+//	$PhysicalNames
+//	number-of-names
+//	physical-dimension physical-tag "physical-name"
+//	…
+//	$EndPhysicalNames
+//
+//	$Nodes
+//	number-of-nodes
+//	node-number x-coord y-coord z-coord
+//	…
+//	$EndNodes
+//
+//	$Elements
+//	number-of-elements
+//	elm-number elm-type number-of-tags < tag > … node-number-list
+//	…
+//	$EndElements
 package msh
 
 import (
 	"fmt"
 	"io/ioutil"
-	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"github.com/Konstantin8105/errors"
-	"github.com/Konstantin8105/pow"
 )
+
+type ElementType int
 
 const (
-	meshFormat    = "$MeshFormat"
-	meshFormatEnd = "$EndMeshFormat"
-	nodes         = "$Nodes"
-	nodesEnd      = "$EndNodes"
-	elements      = "$Elements"
-	elementsEnd   = "$EndElements"
+	Point       ElementType = 15
+	Line                    = 1
+	Triangle                = 2
+	Quadrangle              = 3
+	Tetrahedron             = 4
 )
 
-type elementType int
-
-const (
-	point       elementType = 15
-	line                    = 1
-	triangle                = 2
-	quadrangle              = 3
-	tetrahedron             = 4
-)
-
-type Point struct {
-	Id      int
-	X, Y, Z float64
+type PhysicalName struct {
+	Dimension int
+	Tag       int
+	Name      string
 }
 
-type Line struct {
-	Id       int
-	PointsId [2]int
+type Element struct {
+	Id     int
+	EType  ElementType
+	Tags   []int
+	NodeId []int
 }
 
-type Triangle struct {
-	Id       int
-	PointsId [3]int
+type Node struct {
+	Id    int
+	Coord [3]float64
 }
 
 type Msh struct {
-	Points    []Point
-	Lines     []Line
-	Triangles []Triangle
+	PhysicalNames []PhysicalName
+	Nodes         []Node
+	Elements      []Element
 }
 
-func (m Msh) PointsById(pIds [3]int) (ps [3]Point) {
-	for index, id := range pIds {
-		for j := range m.Points {
-			if id == m.Points[j].Id {
-				ps[index] = m.Points[j]
-				break
-			}
+func (msh Msh) String() string {
+	var out string
+	if 0 < len(msh.PhysicalNames) {
+		out += "$PhysicalNames\n"
+		out += fmt.Sprintf("%d\n", len(msh.PhysicalNames))
+		for _, pn := range msh.PhysicalNames {
+			out += fmt.Sprintf("%v %d \"%s\"\n",
+				pn.Dimension, pn.Tag, pn.Name)
 		}
+		out += "$EndPhysicalNames\n"
 	}
-	return
-}
-
-func (m *Msh) RotateXOY(a float64) {
-	for i := range m.Points {
-		x, y := m.Points[i].X, m.Points[i].Y
-		ampl := math.Sqrt(pow.E2(x) + pow.E2(y))
-		angle := math.Atan2(y, x) + a
-		m.Points[i].X = ampl * math.Cos(angle)
-		m.Points[i].Y = ampl * math.Sin(angle)
+	if 0 < len(msh.Nodes) {
+		out += "$Nodes\n"
+		out += fmt.Sprintf("%d\n", len(msh.Nodes))
+		for _, n := range msh.Nodes {
+			out += fmt.Sprintf("%d %f %f %f\n",
+				n.Id, n.Coord[0], n.Coord[1], n.Coord[2])
+		}
+		out += "$EndNodes\n"
 	}
-}
-
-func (m *Msh) MoveXOY(x, y float64) {
-	for i := range m.Points {
-		m.Points[i].X += x
-		m.Points[i].Y += y
+	if 0 < len(msh.Elements) {
+		out += "$Elements\n"
+		out += fmt.Sprintf("%d\n", len(msh.Elements))
+		for _, el := range msh.Elements {
+			out += fmt.Sprintf("%d %d ", el.Id, el.EType)
+			out += fmt.Sprintf("%d", len(el.Tags))
+			for _, t := range el.Tags {
+				out += fmt.Sprintf(" %d", t)
+			}
+			for _, np := range el.NodeId {
+				out += fmt.Sprintf(" %d", np)
+			}
+			out += "\n"
+		}
+		out += "$EndElements\n"
 	}
+	return out
 }
 
 func New(geoContent string) (m *Msh, err error) {
+	msh, err := Generate(geoContent)
+	if err != nil {
+		return
+	}
+	return Parse(msh)
+}
+
+func Generate(geoContent string) (mshContent string, err error) {
 	// create temp directory
 	var dir string
 	dir, err = ioutil.TempDir("", "msh")
@@ -100,192 +133,124 @@ func New(geoContent string) (m *Msh, err error) {
 
 	// run gmsh
 	meshfn := filepath.Join(dir, "m.msh")
-	if err = exec.Command("gmsh", "-2", geofn, meshfn).Run(); err != nil {
+	if err = exec.Command("gmsh",
+		"-format", "msh2", // Format: MSH2
+		"-smooth", "10", // Smooth mesh
+		"-2", // 2D mesh generation
+		geofn, meshfn).Run(); err != nil {
 		return
 	}
-
 	// read msh
 	meshContent, err := ioutil.ReadFile(meshfn)
 	if err != nil {
 		return
 	}
+	return string(meshContent), nil
+}
 
-	// create mesh
-	var msh Msh
+func Parse(meshContent string) (msh *Msh, err error) {
+	msh = new(Msh)
 
-	// Example of meshContent:
-	//
-	// $MeshFormat
-	// 2.2 0 8
-	// $EndMeshFormat
-	// $Nodes
-	// 5
-	// 1 0 0 0
-	// 2 5 0 0
-	// 3 0 10 0
-	// 4 5 10 0
-	// 5 2.5 5 0
-	// $EndNodes
-	// $Elements
-	// 12
-	// 1 15 2 0 0 1
-	// 2 15 2 0 1 2
-	// 3 15 2 0 2 3
-	// 4 15 2 0 3 4
-	// 5 1 2 0 1 2 4
-	// 6 1 2 0 2 1 3
-	// 7 1 2 0 3 1 2
-	// 8 1 2 0 4 3 4
-	// 9 2 2 0 6 1 2 5
-	// 10 2 2 0 6 3 5 4
-	// 11 2 2 0 6 1 5 3
-	// 12 2 2 0 6 2 4 5
-	// $EndElements
-
+	// split by lines
 	lines := strings.Split(string(meshContent), "\n")
 
-	var nodeLines []string
-	{
-		var start, end int
-		for i := range lines {
-			switch strings.TrimSpace(lines[i]) {
-			case nodes:
-				start = i
-			case nodesEnd:
-				end = i
-			}
+	// PhysicalNames
+	for _, line := range getLines(lines, "$PhysicalNames", "$EndPhysicalNames") {
+		fs := strings.Fields(line)
+		if len(fs) != 3 {
+			err = fmt.Errorf("PhysicalNames error: %v", line)
+			return
 		}
-		nodeLines = lines[start+1+1 : end]
-	}
-
-	var eleLines []string
-	{
-		var start, end int
-		for i := range lines {
-			switch strings.TrimSpace(lines[i]) {
-			case elements:
-				start = i
-			case elementsEnd:
-				end = i
-			}
+		var (
+			dim int
+			tag int
+		)
+		dim, err = strconv.Atoi(fs[0])
+		if err != nil {
+			err = fmt.Errorf("PhysicalNames error: not valid dim - %v. %v", line, err)
+			return
 		}
-		eleLines = lines[start+1+1 : end]
+		tag, err = strconv.Atoi(fs[1])
+		if err != nil {
+			err = fmt.Errorf("PhysicalNames error: not valid tag - %v. %v", line, err)
+			return
+		}
+		name := fs[2][1 : len(fs[2])-1]
+		msh.PhysicalNames = append(msh.PhysicalNames, PhysicalName{
+			Dimension: dim,
+			Tag:       tag,
+			Name:      name,
+		})
 	}
 
-	// parse nodes
-	if err = msh.parseNodes(nodeLines); err != nil {
-		return
+	// Nodes
+	for _, line := range getLines(lines, "$Nodes", "$EndNodes") {
+		fs := strings.Fields(line)
+		if len(fs) != 4 {
+			err = fmt.Errorf("PhysicalNames error: %v", line)
+			return
+		}
+		var (
+			id    int
+			coord [3]float64
+		)
+		if id, err = strconv.Atoi(fs[0]); err != nil {
+			err = fmt.Errorf("Nodes error: not valid id - %v. %v", line, err)
+			return
+		}
+		for i := 0; i < 3; i++ {
+			var v float64
+			v, err = strconv.ParseFloat(fs[i+1], 64)
+			if err != nil {
+				err = fmt.Errorf("Nodes error: not valid coord - %v. %v", line, err)
+				return
+			}
+			coord[i] = v
+		}
+		msh.Nodes = append(msh.Nodes, Node{Id: id, Coord: coord})
 	}
 
-	// parse elements
-	if err = msh.parseElements(eleLines); err != nil {
-		return
+	// Elements
+	for _, line := range getLines(lines, "$Elements", "$EndElements") {
+		var vs []int
+		for _, field := range strings.Fields(line) {
+			var id int
+			id, err = strconv.Atoi(field)
+			if err != nil {
+				err = fmt.Errorf("Elements error: %v. %v", line, err)
+				return
+			}
+			vs = append(vs, id)
+		}
+		msh.Elements = append(msh.Elements, Element{
+			Id:     vs[0],
+			EType:  ElementType(vs[1]),
+			Tags:   vs[3 : 3+vs[2]],
+			NodeId: vs[3+vs[2]:],
+		})
 	}
-
-	return &msh, err
+	return
 }
 
-// Example:
-//
-// 3 0 10 0
-// 6 1 2 0 2 1 3
-// 7 1 2 0 3 1 2
-// 8 1 2 0 4 3 4
-// 4 5 10 0
-// 5 2.5 5 0
-func (msh *Msh) parseNodes(nodeLines []string) error {
-	et := errors.New("parse nodes")
-	for _, nline := range nodeLines {
-		eLine := errors.New(nline)
-		fields := strings.Fields(nline)
-		if size := len(fields); size != 4 {
-			eLine.Add(fmt.Errorf("Amount of node fileds %d is node valid", size))
-			continue
+func getLine(lines []string, name string) (line int) {
+	for i, line := range lines {
+		line = strings.TrimSpace(line)
+		line = strings.ReplaceAll(line, "\r", "")
+		if name == line {
+			return i
 		}
-		// parsing values
-		var (
-			id      int
-			x, y, z float64
-			err     error
-		)
-		if id, err = strconv.Atoi(fields[0]); err != nil {
-			eLine.Add(err)
-		}
-		if x, err = strconv.ParseFloat(fields[1], 64); err != nil {
-			eLine.Add(err)
-		}
-		if y, err = strconv.ParseFloat(fields[2], 64); err != nil {
-			eLine.Add(err)
-		}
-		if z, err = strconv.ParseFloat(fields[3], 64); err != nil {
-			eLine.Add(err)
-		}
-		if eLine.IsError() {
-			et.Add(eLine)
-			continue
-		}
-		msh.Points = append(msh.Points, Point{Id: id, X: x, Y: y, Z: z})
 	}
-	if et.IsError() {
-		return et
-	}
-	return nil
+	return -1
 }
 
-// Example
-//
-// 4 15 2 0 3 4
-// 5 1  2 0 1 2 4
-// 9 2  2 0 6 1 2 5
-func (msh *Msh) parseElements(eleLines []string) error {
-	et := errors.New("parse elements")
-	for _, eline := range eleLines {
-		eLine := errors.New(eline)
-		fields := strings.Fields(eline)
-		if size := len(fields); size == 0 {
-			eLine.Add(fmt.Errorf("Zero amount of node fileds %d is node valid", size))
-			continue
-		}
-		// parsing values
-		var (
-			id      int
-			eleType int
-			err     error
-		)
-		if id, err = strconv.Atoi(fields[0]); err != nil {
-			eLine.Add(err)
-		}
-		if eleType, err = strconv.Atoi(fields[1]); err != nil {
-			eLine.Add(err)
-		}
-
-		switch elementType(eleType) {
-		case line:
-			var e Line
-			for i := 0; i < len(e.PointsId); i++ {
-				var pid int
-				if pid, err = strconv.Atoi(fields[i+len(fields)-len(e.PointsId)]); err != nil {
-					eLine.Add(err)
-				}
-				e.PointsId[i] = pid
-			}
-			e.Id = id
-			msh.Lines = append(msh.Lines, e)
-		case triangle:
-			var e Triangle
-			for i := 0; i < len(e.PointsId); i++ {
-				var pid int
-				if pid, err = strconv.Atoi(fields[i+len(fields)-len(e.PointsId)]); err != nil {
-					eLine.Add(err)
-				}
-				e.PointsId[i] = pid
-			}
-			e.Id = id
-			msh.Triangles = append(msh.Triangles, e)
-		}
+func getLines(lines []string, from, to string) (res []string) {
+	fi := getLine(lines, from)
+	ti := getLine(lines, to)
+	if fi < 0 || ti < 0 {
+		return
 	}
-	if et.IsError() {
-		return et
+	if ti < fi {
+		return
 	}
-	return nil
+	return lines[fi+2 : ti]
 }
