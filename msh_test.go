@@ -8,7 +8,7 @@ import (
 	"github.com/Konstantin8105/msh"
 )
 
-func Example() {
+func geo() string {
 	var geo string
 	geo += fmt.Sprintf("h   = %.5f;\n", 10.0)
 	geo += fmt.Sprintf("thk = %.5f;\n", 5.00)
@@ -32,6 +32,11 @@ func Example() {
 	Physical Point("NODE001") = {001};
 	Plane Surface(6) = {5};
 	Physical Surface("PLANE006") = {6};`
+	return geo
+}
+
+func Example() {
+	geo := geo()
 
 	mshContent, err := msh.Generate(geo)
 	if err != nil {
@@ -119,5 +124,38 @@ func TestFail(t *testing.T) {
 	}
 	if _, err := msh.Generate("fail"); err == nil {
 		t.Fatal("Generate")
+	}
+	if _, err := msh.Parse(`
+$PhysicalNames
+7
+0 1 fail "NODE002"
+0 5 fail "NODE003"
+0 6 fail "NODE001"
+1 2 fail "LINE001"
+1 3 fail "LINE002"
+1 4 fail "LINE003"
+2 7 fail "PLANE00"
+$EndPhysicalNames`); err == nil {
+		t.Fatal("Parse")
+	}
+}
+
+func TestGetNode(t *testing.T) {
+	geo := geo()
+	msh, err := msh.New(geo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range msh.Elements {
+		for k := range msh.Elements[i].NodeId {
+			ni := msh.Elements[i].NodeId[k]
+			index := msh.GetNode(ni)
+			if index < 0 {
+				t.Errorf("Not found")
+			}
+		}
+	}
+	if index := msh.GetNode(10000); 0 <= index {
+		t.Errorf("Found")
 	}
 }

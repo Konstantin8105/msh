@@ -31,6 +31,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -67,6 +68,22 @@ type Msh struct {
 	PhysicalNames []PhysicalName
 	Nodes         []Node
 	Elements      []Element
+}
+
+func (msh Msh) GetNode(Id int) (index int) {
+	index = sort.Search(len(msh.Nodes), func(i int) bool { return msh.Nodes[i].Id >= Id })
+	if index < len(msh.Nodes) && msh.Nodes[index].Id == Id {
+		// x is present at data[i]
+		return
+	}
+	// x is not present in data,
+	// but i is the index where it would be inserted.
+	for i := range msh.Nodes {
+		if msh.Nodes[i].Id == Id {
+			return i
+		}
+	}
+	return -1
 }
 
 func (msh Msh) String() string {
