@@ -70,6 +70,20 @@ type Msh struct {
 	Elements      []Element
 }
 
+func (msh *Msh) Sort(ets ...ElementType) {
+	pos := func(et ElementType) int{
+		for i :=range ets {
+			if ets[i] == et {
+				return i
+			}
+		}
+		return len(ets)
+	}
+	sort.Slice(msh.Elements, func(i,j int) bool {
+		return pos(msh.Elements[i].EType) < pos(msh.Elements[j].EType)
+	})
+}
+
 func (msh *Msh) RemoveElements(ets ...ElementType) {
 	for i := len(msh.Elements)-1; 0 <= i; i-- {
 		remove := false
