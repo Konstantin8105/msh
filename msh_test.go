@@ -138,7 +138,6 @@ again:
 	// 7 2 2 7 6 1 2 5
 	// 10 2 2 7 6 2 4 5
 	// $EndElements
-	// [0 1 2 0 3 4]
 	//
 	// After reindex:
 	// $PhysicalNames

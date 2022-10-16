@@ -87,7 +87,6 @@ func (msh *Msh) Index1() {
 			*nid = newId[*nid]
 		}
 	}
-	fmt.Println(	newId)
 	for i := range msh.Nodes {
 		msh.Nodes[i].Id = i + 1
 	}
