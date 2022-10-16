@@ -70,6 +70,32 @@ type Msh struct {
 	Elements      []Element
 }
 
+func (msh *Msh) Index1() {
+	maxIndex := 0
+	for _, n := range msh.Nodes {
+		if maxIndex < n.Id {
+			maxIndex = n.Id
+		}
+	}
+	newId := make([]int, maxIndex+1)
+	for id, n := range msh.Nodes {
+		newId[n.Id] = id+1
+	}
+	for i := range msh.Elements {
+		for j := range msh.Elements[i].NodeId {
+			nid := &msh.Elements[i].NodeId[j]
+			*nid = newId[*nid]
+		}
+	}
+	fmt.Println(	newId)
+	for i := range msh.Nodes {
+		msh.Nodes[i].Id = i + 1
+	}
+	for i := range msh.Elements {
+		msh.Elements[i].Id = i + 1
+	}
+}
+
 func (msh Msh) GetNode(Id int) (index int) {
 	index = sort.Search(len(msh.Nodes), func(i int) bool { return msh.Nodes[i].Id >= Id })
 	if index < len(msh.Nodes) && msh.Nodes[index].Id == Id {

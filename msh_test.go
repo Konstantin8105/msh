@@ -35,6 +35,140 @@ func geo() string {
 	return geo
 }
 
+func ExampleIndex1() {
+	geo := geo()
+
+	msh, err := msh.New(geo)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Fprintf(os.Stdout, "\nOriginal:\n%s", msh)
+
+	// remove node with index 3
+	fmt.Fprintf(os.Stdout, "\nRemoving:\n")
+	index := 3
+again:
+	for i, n := range msh.Nodes {
+		if msh.Nodes[i].Id == index {
+			fmt.Fprintf(os.Stdout, "Remove node id %d: %v\n", n.Id, n)
+			msh.Nodes = append(msh.Nodes[:i], msh.Nodes[i+1:]...)
+			goto again
+		}
+	}
+	for k, el := range msh.Elements {
+		for _, id := range msh.Elements[k].NodeId {
+			if id == index {
+				fmt.Fprintf(os.Stdout, "Remove element id %d: %v\n", el.Id, el)
+				msh.Elements = append(msh.Elements[:k], msh.Elements[k+1:]...)
+				goto again
+			}
+		}
+	}
+	fmt.Fprintf(os.Stdout, "\nAfter remove:\n%s", msh)
+
+	// reindex
+	msh.Index1()
+	fmt.Fprintf(os.Stdout, "\nAfter reindex:\n%s", msh)
+
+	// Output:
+	// Original:
+	// $PhysicalNames
+	// 7
+	// 0 1 "NODE002"
+	// 0 5 "NODE003"
+	// 0 6 "NODE001"
+	// 1 2 "LINE001"
+	// 1 3 "LINE002"
+	// 1 4 "LINE003"
+	// 2 7 "PLANE006"
+	// $EndPhysicalNames
+	// $Nodes
+	// 5
+	// 1 0.000000 0.000000 0.000000
+	// 2 5.000000 0.000000 0.000000
+	// 3 0.000000 10.000000 0.000000
+	// 4 5.000000 10.000000 0.000000
+	// 5 2.500000 5.000000 0.000000
+	// $EndNodes
+	// $Elements
+	// 10
+	// 1 15 2 6 1 2
+	// 2 15 2 1 2 3
+	// 3 15 2 5 3 4
+	// 4 1 2 2 1 2 4
+	// 5 1 2 3 2 1 3
+	// 6 1 2 4 3 1 2
+	// 7 2 2 7 6 1 2 5
+	// 8 2 2 7 6 4 3 5
+	// 9 2 2 7 6 3 1 5
+	// 10 2 2 7 6 2 4 5
+	// $EndElements
+	//
+	// Removing:
+	// Remove node id 3: {3 [0 10 0]}
+	// Remove element id 2: {2 15 [1 2] [3]}
+	// Remove element id 5: {5 1 [3 2] [1 3]}
+	// Remove element id 8: {8 2 [7 6] [4 3 5]}
+	// Remove element id 9: {9 2 [7 6] [3 1 5]}
+	//
+	// After remove:
+	// $PhysicalNames
+	// 7
+	// 0 1 "NODE002"
+	// 0 5 "NODE003"
+	// 0 6 "NODE001"
+	// 1 2 "LINE001"
+	// 1 3 "LINE002"
+	// 1 4 "LINE003"
+	// 2 7 "PLANE006"
+	// $EndPhysicalNames
+	// $Nodes
+	// 4
+	// 1 0.000000 0.000000 0.000000
+	// 2 5.000000 0.000000 0.000000
+	// 4 5.000000 10.000000 0.000000
+	// 5 2.500000 5.000000 0.000000
+	// $EndNodes
+	// $Elements
+	// 6
+	// 1 15 2 6 1 2
+	// 3 15 2 5 3 4
+	// 4 1 2 2 1 2 4
+	// 6 1 2 4 3 1 2
+	// 7 2 2 7 6 1 2 5
+	// 10 2 2 7 6 2 4 5
+	// $EndElements
+	// [0 1 2 0 3 4]
+	//
+	// After reindex:
+	// $PhysicalNames
+	// 7
+	// 0 1 "NODE002"
+	// 0 5 "NODE003"
+	// 0 6 "NODE001"
+	// 1 2 "LINE001"
+	// 1 3 "LINE002"
+	// 1 4 "LINE003"
+	// 2 7 "PLANE006"
+	// $EndPhysicalNames
+	// $Nodes
+	// 4
+	// 1 0.000000 0.000000 0.000000
+	// 2 5.000000 0.000000 0.000000
+	// 3 5.000000 10.000000 0.000000
+	// 4 2.500000 5.000000 0.000000
+	// $EndNodes
+	// $Elements
+	// 6
+	// 1 15 2 6 1 2
+	// 2 15 2 5 3 3
+	// 3 1 2 2 1 2 3
+	// 4 1 2 4 3 1 2
+	// 5 2 2 7 6 1 2 4
+	// 6 2 2 7 6 2 3 4
+	// $EndElements
+}
+
 func Example() {
 	geo := geo()
 
