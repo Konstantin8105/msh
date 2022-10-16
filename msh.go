@@ -70,6 +70,21 @@ type Msh struct {
 	Elements      []Element
 }
 
+func (msh *Msh) RemoveElements(ets ...ElementType) {
+	for i := len(msh.Elements)-1; 0 <= i; i-- {
+		remove := false
+		for k := range ets {
+			if ets[k] == msh.Elements[i].EType {
+				remove =true
+			}
+		}
+		if !remove {
+			continue
+		}
+		msh.Elements = append(msh.Elements[:i],msh.Elements[i+1:]...)
+	}
+}
+
 func (msh *Msh) Index1() {
 	maxIndex := 0
 	for _, n := range msh.Nodes {
