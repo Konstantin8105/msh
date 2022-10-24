@@ -180,6 +180,11 @@ func (msh Msh) String() string {
 }
 
 func New(geoContent string) (m *Msh, err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("New: %v", err)
+		}
+	}()
 	msh, err := Generate(geoContent)
 	if err != nil {
 		return
@@ -188,6 +193,11 @@ func New(geoContent string) (m *Msh, err error) {
 }
 
 func Generate(geoContent string) (mshContent string, err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("Generate: %v", err)
+		}
+	}()
 	// create temp directory
 	var dir string
 	dir, err = ioutil.TempDir("", "msh")
