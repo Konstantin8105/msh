@@ -206,7 +206,7 @@ func Generate(geoContent string) (mshContent string, err error) {
 	}
 	defer func() {
 		if err != nil {
-			err = fmt.Errorf("%v. See dir: %v", dir)
+			err = fmt.Errorf("%v. See dir: %v", err, dir)
 		} else {
 			os.RemoveAll(dir) // clean up
 		}
