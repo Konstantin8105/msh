@@ -71,31 +71,31 @@ type Msh struct {
 }
 
 func (msh *Msh) Sort(ets ...ElementType) {
-	pos := func(et ElementType) int{
-		for i :=range ets {
+	pos := func(et ElementType) int {
+		for i := range ets {
 			if ets[i] == et {
 				return i
 			}
 		}
 		return len(ets)
 	}
-	sort.Slice(msh.Elements, func(i,j int) bool {
+	sort.Slice(msh.Elements, func(i, j int) bool {
 		return pos(msh.Elements[i].EType) < pos(msh.Elements[j].EType)
 	})
 }
 
 func (msh *Msh) RemoveElements(ets ...ElementType) {
-	for i := len(msh.Elements)-1; 0 <= i; i-- {
+	for i := len(msh.Elements) - 1; 0 <= i; i-- {
 		remove := false
 		for k := range ets {
 			if ets[k] == msh.Elements[i].EType {
-				remove =true
+				remove = true
 			}
 		}
 		if !remove {
 			continue
 		}
-		msh.Elements = append(msh.Elements[:i],msh.Elements[i+1:]...)
+		msh.Elements = append(msh.Elements[:i], msh.Elements[i+1:]...)
 	}
 }
 
@@ -108,7 +108,7 @@ func (msh *Msh) Index1() {
 	}
 	newId := make([]int, maxIndex+1)
 	for id, n := range msh.Nodes {
-		newId[n.Id] = id+1
+		newId[n.Id] = id + 1
 	}
 	for i := range msh.Elements {
 		for j := range msh.Elements[i].NodeId {
@@ -194,7 +194,13 @@ func Generate(geoContent string) (mshContent string, err error) {
 	if err != nil {
 		return
 	}
-	defer os.RemoveAll(dir) // clean up
+	defer func() {
+		if err != nil {
+			os.RemoveAll(dir) // clean up
+		} else {
+			err = fmt.Errorf("%v. See dir: %v", dir)
+		}
+	}()
 
 	// create geo file
 	geofn := filepath.Join(dir, "m.geo")
