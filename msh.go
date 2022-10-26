@@ -223,7 +223,7 @@ func Generate(geoContent string) (mshContent string, err error) {
 	if err = exec.Command("gmsh",
 		"-format", "msh2", // Format: MSH2
 		"-smooth", "10", // Smooth mesh
-		"-2", // 2D mesh generation
+		"-3", // 3D mesh generation
 		geofn, meshfn).Run(); err != nil {
 		return
 	}
