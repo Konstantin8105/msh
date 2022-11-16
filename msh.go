@@ -216,6 +216,7 @@ func Generate(geoContent string) (mshContent string, err error) {
 	// create geo file
 	geofn := filepath.Join(dir, "m.geo")
 	if err = ioutil.WriteFile(geofn, []byte(geoContent), 0666); err != nil {
+		err = fmt.Errorf("geofn error: %v", err)
 		return
 	}
 
@@ -232,11 +233,13 @@ func Generate(geoContent string) (mshContent string, err error) {
 		"-smooth", "10", // Smooth mesh
 		"-3", // 3D mesh generation
 		geofn, meshfn).Run(); err != nil {
+		err = fmt.Errorf("meshfn error: %v", err)
 		return
 	}
 	// read msh
 	meshContent, err := ioutil.ReadFile(meshfn)
 	if err != nil {
+		err = fmt.Errorf("meshContent error: %v", err)
 		return
 	}
 	return string(meshContent), nil
