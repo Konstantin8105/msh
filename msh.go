@@ -31,6 +31,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -218,9 +219,15 @@ func Generate(geoContent string) (mshContent string, err error) {
 		return
 	}
 
+	// application
+	gmshApp := "gmsh"
+	if runtime.GOOS == "windows" {
+		gmshApp = "gmsh.exe"
+	}
+
 	// run gmsh
 	meshfn := filepath.Join(dir, "m.msh")
-	if err = exec.Command("gmsh",
+	if err = exec.Command(gmshApp,
 		"-format", "msh2", // Format: MSH2
 		"-smooth", "10", // Smooth mesh
 		"-3", // 3D mesh generation
