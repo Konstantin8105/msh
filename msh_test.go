@@ -3,10 +3,18 @@ package msh_test
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/Konstantin8105/msh"
 )
+
+func init() {
+	if runtime.GOOS == "windows" {
+		// only for work computer
+		*msh.GmshApp = "Z:\\Software\\Gmsh\\gmsh.exe"
+	}
+}
 
 func geo() string {
 	var geo string

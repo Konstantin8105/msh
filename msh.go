@@ -26,6 +26,8 @@
 package msh
 
 import (
+	"bytes"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -36,6 +38,8 @@ import (
 	"strconv"
 	"strings"
 )
+
+var GmshApp = flag.String("gmsh", "", "Example:\n`gmsh` for Linux\n`gmsh.exe` for Windows")
 
 type ElementType int
 
@@ -221,20 +225,30 @@ func Generate(geoContent string) (mshContent string, err error) {
 	}
 
 	// application
-	gmshApp := "gmsh"
-	if runtime.GOOS == "windows" {
-		gmshApp = "gmsh.exe"
+	if *GmshApp == "" {
+		*GmshApp = "gmsh"
+		if runtime.GOOS == "windows" {
+			*GmshApp = "gmsh.exe"
+		}
 	}
 
 	// run gmsh
 	meshfn := filepath.Join(dir, "m.msh")
-	if err = exec.Command(gmshApp,
+	args := []string{
+		*GmshApp,
 		"-format", "msh2", // Format: MSH2
 		"-smooth", "10", // Smooth mesh
 		"-3", // 3D mesh generation
-		geofn, meshfn).Run(); err != nil {
-		err = fmt.Errorf("meshfn error: %v", err)
-		return
+		geofn,
+		meshfn,
+	}
+	var out []byte
+	if out, err = exec.Command(args[0], args[1:]...).Output(); err != nil {
+		if !bytes.Contains(out, []byte("Done writing")) {
+			err = fmt.Errorf("meshfn error: %v with args: %v\n%s",
+				err, args, string(out))
+			return
+		}
 	}
 	// read msh
 	meshContent, err := ioutil.ReadFile(meshfn)
