@@ -26,7 +26,6 @@
 package msh
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -197,6 +196,16 @@ func New(geoContent string) (m *Msh, err error) {
 	return Parse(msh)
 }
 
+func DefaultGmsh() {
+	if *GmshApp != "" {
+		return
+	}
+	*GmshApp = "gmsh"
+	if runtime.GOOS == "windows" {
+		*GmshApp = "gmsh.exe"
+	}
+}
+
 func Generate(geoContent string) (mshContent string, err error) {
 	defer func() {
 		if err != nil {
@@ -225,12 +234,7 @@ func Generate(geoContent string) (mshContent string, err error) {
 	}
 
 	// application
-	if *GmshApp == "" {
-		*GmshApp = "gmsh"
-		if runtime.GOOS == "windows" {
-			*GmshApp = "gmsh.exe"
-		}
-	}
+	DefaultGmsh()
 
 	// run gmsh
 	meshfn := filepath.Join(dir, "m.msh")
@@ -244,11 +248,11 @@ func Generate(geoContent string) (mshContent string, err error) {
 	}
 	var out []byte
 	if out, err = exec.Command(args[0], args[1:]...).Output(); err != nil {
-		if !bytes.Contains(out, []byte("Done writing")) {
-			err = fmt.Errorf("meshfn error: %v with args: %v\n%s",
-				err, args, string(out))
-			return
-		}
+		//if !bytes.Contains(out, []byte("Done writing")) {
+		err = fmt.Errorf("meshfn error: %v with args: %v\n%s",
+			err, args, string(out))
+		return
+		// }
 	}
 	// read msh
 	meshContent, err := ioutil.ReadFile(meshfn)
