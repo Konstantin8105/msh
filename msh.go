@@ -145,7 +145,10 @@ func (msh Msh) GetNode(Id int) (index int) {
 }
 
 func (msh Msh) String() string {
-	var out string
+	var out string = `$MeshFormat
+2.2 0 8
+$EndMeshFormat
+`
 	if 0 < len(msh.PhysicalNames) {
 		out += "$PhysicalNames\n"
 		out += fmt.Sprintf("%d\n", len(msh.PhysicalNames))

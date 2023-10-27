@@ -1,11 +1,13 @@
 package msh_test
 
 import (
+	"bytes"
 	"fmt"
-	"os"
+	"path/filepath"
 	"runtime"
 	"testing"
 
+	"github.com/Konstantin8105/compare"
 	"github.com/Konstantin8105/msh"
 )
 
@@ -43,180 +45,67 @@ func geo() string {
 	return geo
 }
 
-func ExampleSort() {
+// tf is testdata file
+func tf(file string) string {
+	return filepath.Join("testdata", file)
+}
+
+func TestSort(t *testing.T) {
 	geo := geo()
 
+	var buf bytes.Buffer
 	mesh, err := msh.New(geo)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Fprintf(os.Stdout, "\nOriginal:\n%s", mesh)
+	fmt.Fprintf(&buf, "\nOriginal:\n%s", mesh)
 
 	// removing
+	fmt.Fprintf(&buf, "---------------\n")
 	mesh.Sort(msh.Triangle, msh.Quadrangle)
 	mesh.Index1()
-	fmt.Fprintf(os.Stdout, "\nAfter sort:\n%s", mesh)
+	fmt.Fprintf(&buf, "\nAfter sort:\n%s", mesh)
 
-	// Output:
-	// Original:
-	// $PhysicalNames
-	// 7
-	// 0 1 "NODE002"
-	// 0 5 "NODE003"
-	// 0 6 "NODE001"
-	// 1 2 "LINE001"
-	// 1 3 "LINE002"
-	// 1 4 "LINE003"
-	// 2 7 "PLANE006"
-	// $EndPhysicalNames
-	// $Nodes
-	// 5
-	// 1 0.000000 0.000000 0.000000
-	// 2 5.000000 0.000000 0.000000
-	// 3 0.000000 10.000000 0.000000
-	// 4 5.000000 10.000000 0.000000
-	// 5 2.500000 5.000000 0.000000
-	// $EndNodes
-	// $Elements
-	// 10
-	// 1 15 2 6 1 2
-	// 2 15 2 1 2 3
-	// 3 15 2 5 3 4
-	// 4 1 2 2 1 2 4
-	// 5 1 2 3 2 1 3
-	// 6 1 2 4 3 1 2
-	// 7 2 2 7 6 1 2 5
-	// 8 2 2 7 6 4 3 5
-	// 9 2 2 7 6 3 1 5
-	// 10 2 2 7 6 2 4 5
-	// $EndElements
-	//
-	// After sort:
-	// $PhysicalNames
-	// 7
-	// 0 1 "NODE002"
-	// 0 5 "NODE003"
-	// 0 6 "NODE001"
-	// 1 2 "LINE001"
-	// 1 3 "LINE002"
-	// 1 4 "LINE003"
-	// 2 7 "PLANE006"
-	// $EndPhysicalNames
-	// $Nodes
-	// 5
-	// 1 0.000000 0.000000 0.000000
-	// 2 5.000000 0.000000 0.000000
-	// 3 0.000000 10.000000 0.000000
-	// 4 5.000000 10.000000 0.000000
-	// 5 2.500000 5.000000 0.000000
-	// $EndNodes
-	// $Elements
-	// 10
-	// 1 2 2 7 6 1 2 5
-	// 2 2 2 7 6 4 3 5
-	// 3 2 2 7 6 3 1 5
-	// 4 2 2 7 6 2 4 5
-	// 5 15 2 6 1 2
-	// 6 15 2 1 2 3
-	// 7 15 2 5 3 4
-	// 8 1 2 2 1 2 4
-	// 9 1 2 3 2 1 3
-	// 10 1 2 4 3 1 2
-	// $EndElements
+	compare.Test(t, tf("Sort"), buf.Bytes())
 }
 
-func ExampleRemoveElements() {
+func TestRemoveElements(t *testing.T) {
 	geo := geo()
 
+	var buf bytes.Buffer
 	mesh, err := msh.New(geo)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Fprintf(os.Stdout, "\nOriginal:\n%s", mesh)
+	fmt.Fprintf(&buf, "\nOriginal:\n%s", mesh)
 
 	// removing
+	fmt.Fprintf(&buf, "---------------\n")
 	mesh.RemoveElements(msh.Point, msh.Line, msh.Tetrahedron)
 	mesh.Index1()
-	fmt.Fprintf(os.Stdout, "\nAfter reindex:\n%s", mesh)
+	fmt.Fprintf(&buf, "\nAfter reindex:\n%s", mesh)
 
-	// Output:
-	// Original:
-	// $PhysicalNames
-	// 7
-	// 0 1 "NODE002"
-	// 0 5 "NODE003"
-	// 0 6 "NODE001"
-	// 1 2 "LINE001"
-	// 1 3 "LINE002"
-	// 1 4 "LINE003"
-	// 2 7 "PLANE006"
-	// $EndPhysicalNames
-	// $Nodes
-	// 5
-	// 1 0.000000 0.000000 0.000000
-	// 2 5.000000 0.000000 0.000000
-	// 3 0.000000 10.000000 0.000000
-	// 4 5.000000 10.000000 0.000000
-	// 5 2.500000 5.000000 0.000000
-	// $EndNodes
-	// $Elements
-	// 10
-	// 1 15 2 6 1 2
-	// 2 15 2 1 2 3
-	// 3 15 2 5 3 4
-	// 4 1 2 2 1 2 4
-	// 5 1 2 3 2 1 3
-	// 6 1 2 4 3 1 2
-	// 7 2 2 7 6 1 2 5
-	// 8 2 2 7 6 4 3 5
-	// 9 2 2 7 6 3 1 5
-	// 10 2 2 7 6 2 4 5
-	// $EndElements
-	//
-	// After reindex:
-	// $PhysicalNames
-	// 7
-	// 0 1 "NODE002"
-	// 0 5 "NODE003"
-	// 0 6 "NODE001"
-	// 1 2 "LINE001"
-	// 1 3 "LINE002"
-	// 1 4 "LINE003"
-	// 2 7 "PLANE006"
-	// $EndPhysicalNames
-	// $Nodes
-	// 5
-	// 1 0.000000 0.000000 0.000000
-	// 2 5.000000 0.000000 0.000000
-	// 3 0.000000 10.000000 0.000000
-	// 4 5.000000 10.000000 0.000000
-	// 5 2.500000 5.000000 0.000000
-	// $EndNodes
-	// $Elements
-	// 4
-	// 1 2 2 7 6 1 2 5
-	// 2 2 2 7 6 4 3 5
-	// 3 2 2 7 6 3 1 5
-	// 4 2 2 7 6 2 4 5
-	// $EndElements
+	compare.Test(t, tf("RemoveElements"), buf.Bytes())
 }
 
-func ExampleIndex1() {
+func TestIndex1(t *testing.T) {
 	geo := geo()
 
+	var buf bytes.Buffer
 	msh, err := msh.New(geo)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Fprintf(os.Stdout, "\nOriginal:\n%s", msh)
+	fmt.Fprintf(&buf, "\nOriginal:\n%s", msh)
 
 	// remove node with index 3
-	fmt.Fprintf(os.Stdout, "\nRemoving:\n")
+	fmt.Fprintf(&buf, "\nRemoving:\n")
 	index := 3
 again:
+	fmt.Fprintf(&buf, "---------------\n")
 	for i, n := range msh.Nodes {
 		if msh.Nodes[i].Id == index {
-			fmt.Fprintf(os.Stdout, "Remove node id %d: %v\n", n.Id, n)
+			fmt.Fprintf(&buf, "Remove node id %d: %v\n", n.Id, n)
 			msh.Nodes = append(msh.Nodes[:i], msh.Nodes[i+1:]...)
 			goto again
 		}
@@ -224,197 +113,40 @@ again:
 	for k, el := range msh.Elements {
 		for _, id := range msh.Elements[k].NodeId {
 			if id == index {
-				fmt.Fprintf(os.Stdout, "Remove element id %d: %v\n", el.Id, el)
+				fmt.Fprintf(&buf, "Remove element id %d: %v\n", el.Id, el)
 				msh.Elements = append(msh.Elements[:k], msh.Elements[k+1:]...)
 				goto again
 			}
 		}
 	}
-	fmt.Fprintf(os.Stdout, "\nAfter remove:\n%s", msh)
+	fmt.Fprintf(&buf, "\nAfter remove:\n%s", msh)
 
 	// reindex
+	fmt.Fprintf(&buf, "---------------\n")
 	msh.Index1()
-	fmt.Fprintf(os.Stdout, "\nAfter reindex:\n%s", msh)
+	fmt.Fprintf(&buf, "\nAfter reindex:\n%s", msh)
 
-	// Output:
-	// Original:
-	// $PhysicalNames
-	// 7
-	// 0 1 "NODE002"
-	// 0 5 "NODE003"
-	// 0 6 "NODE001"
-	// 1 2 "LINE001"
-	// 1 3 "LINE002"
-	// 1 4 "LINE003"
-	// 2 7 "PLANE006"
-	// $EndPhysicalNames
-	// $Nodes
-	// 5
-	// 1 0.000000 0.000000 0.000000
-	// 2 5.000000 0.000000 0.000000
-	// 3 0.000000 10.000000 0.000000
-	// 4 5.000000 10.000000 0.000000
-	// 5 2.500000 5.000000 0.000000
-	// $EndNodes
-	// $Elements
-	// 10
-	// 1 15 2 6 1 2
-	// 2 15 2 1 2 3
-	// 3 15 2 5 3 4
-	// 4 1 2 2 1 2 4
-	// 5 1 2 3 2 1 3
-	// 6 1 2 4 3 1 2
-	// 7 2 2 7 6 1 2 5
-	// 8 2 2 7 6 4 3 5
-	// 9 2 2 7 6 3 1 5
-	// 10 2 2 7 6 2 4 5
-	// $EndElements
-	//
-	// Removing:
-	// Remove node id 3: {3 [0 10 0]}
-	// Remove element id 2: {2 15 [1 2] [3]}
-	// Remove element id 5: {5 1 [3 2] [1 3]}
-	// Remove element id 8: {8 2 [7 6] [4 3 5]}
-	// Remove element id 9: {9 2 [7 6] [3 1 5]}
-	//
-	// After remove:
-	// $PhysicalNames
-	// 7
-	// 0 1 "NODE002"
-	// 0 5 "NODE003"
-	// 0 6 "NODE001"
-	// 1 2 "LINE001"
-	// 1 3 "LINE002"
-	// 1 4 "LINE003"
-	// 2 7 "PLANE006"
-	// $EndPhysicalNames
-	// $Nodes
-	// 4
-	// 1 0.000000 0.000000 0.000000
-	// 2 5.000000 0.000000 0.000000
-	// 4 5.000000 10.000000 0.000000
-	// 5 2.500000 5.000000 0.000000
-	// $EndNodes
-	// $Elements
-	// 6
-	// 1 15 2 6 1 2
-	// 3 15 2 5 3 4
-	// 4 1 2 2 1 2 4
-	// 6 1 2 4 3 1 2
-	// 7 2 2 7 6 1 2 5
-	// 10 2 2 7 6 2 4 5
-	// $EndElements
-	//
-	// After reindex:
-	// $PhysicalNames
-	// 7
-	// 0 1 "NODE002"
-	// 0 5 "NODE003"
-	// 0 6 "NODE001"
-	// 1 2 "LINE001"
-	// 1 3 "LINE002"
-	// 1 4 "LINE003"
-	// 2 7 "PLANE006"
-	// $EndPhysicalNames
-	// $Nodes
-	// 4
-	// 1 0.000000 0.000000 0.000000
-	// 2 5.000000 0.000000 0.000000
-	// 3 5.000000 10.000000 0.000000
-	// 4 2.500000 5.000000 0.000000
-	// $EndNodes
-	// $Elements
-	// 6
-	// 1 15 2 6 1 2
-	// 2 15 2 5 3 3
-	// 3 1 2 2 1 2 3
-	// 4 1 2 4 3 1 2
-	// 5 2 2 7 6 1 2 4
-	// 6 2 2 7 6 2 3 4
-	// $EndElements
+	compare.Test(t, tf("Index1"), buf.Bytes())
 }
 
-func Example() {
+func Test(t *testing.T) {
 	geo := geo()
 
+	var buf bytes.Buffer
 	mshContent, err := msh.Generate(geo)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Fprintf(os.Stdout, "%v", mshContent)
+	fmt.Fprintf(&buf, "%v", mshContent)
 
+	fmt.Fprintf(&buf, "---------------\n")
 	msh, err := msh.New(geo)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Fprintf(os.Stdout, "%s", msh)
+	fmt.Fprintf(&buf, "%s", msh)
 
-	// Output:
-	// $MeshFormat
-	// 2.2 0 8
-	// $EndMeshFormat
-	// $PhysicalNames
-	// 7
-	// 0 1 "NODE002"
-	// 0 5 "NODE003"
-	// 0 6 "NODE001"
-	// 1 2 "LINE001"
-	// 1 3 "LINE002"
-	// 1 4 "LINE003"
-	// 2 7 "PLANE006"
-	// $EndPhysicalNames
-	// $Nodes
-	// 5
-	// 1 0 0 0
-	// 2 5 0 0
-	// 3 0 10 0
-	// 4 5 10 0
-	// 5 2.5 5 0
-	// $EndNodes
-	// $Elements
-	// 10
-	// 1 15 2 6 1 2
-	// 2 15 2 1 2 3
-	// 3 15 2 5 3 4
-	// 4 1 2 2 1 2 4
-	// 5 1 2 3 2 1 3
-	// 6 1 2 4 3 1 2
-	// 7 2 2 7 6 1 2 5
-	// 8 2 2 7 6 4 3 5
-	// 9 2 2 7 6 3 1 5
-	// 10 2 2 7 6 2 4 5
-	// $EndElements
-	// $PhysicalNames
-	// 7
-	// 0 1 "NODE002"
-	// 0 5 "NODE003"
-	// 0 6 "NODE001"
-	// 1 2 "LINE001"
-	// 1 3 "LINE002"
-	// 1 4 "LINE003"
-	// 2 7 "PLANE006"
-	// $EndPhysicalNames
-	// $Nodes
-	// 5
-	// 1 0.000000 0.000000 0.000000
-	// 2 5.000000 0.000000 0.000000
-	// 3 0.000000 10.000000 0.000000
-	// 4 5.000000 10.000000 0.000000
-	// 5 2.500000 5.000000 0.000000
-	// $EndNodes
-	// $Elements
-	// 10
-	// 1 15 2 6 1 2
-	// 2 15 2 1 2 3
-	// 3 15 2 5 3 4
-	// 4 1 2 2 1 2 4
-	// 5 1 2 3 2 1 3
-	// 6 1 2 4 3 1 2
-	// 7 2 2 7 6 1 2 5
-	// 8 2 2 7 6 4 3 5
-	// 9 2 2 7 6 3 1 5
-	// 10 2 2 7 6 2 4 5
-	// $EndElements
+	compare.Test(t, tf("Test"), buf.Bytes())
 }
 
 func TestFail(t *testing.T) {
