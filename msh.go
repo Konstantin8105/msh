@@ -145,45 +145,46 @@ func (msh Msh) GetNode(Id int) (index int) {
 }
 
 func (msh Msh) String() string {
-	var out string = `$MeshFormat
+	var sb strings.Builder
+	sb.WriteString(`$MeshFormat
 2.2 0 8
 $EndMeshFormat
-`
+`)
 	if 0 < len(msh.PhysicalNames) {
-		out += "$PhysicalNames\n"
-		out += fmt.Sprintf("%d\n", len(msh.PhysicalNames))
+		sb.WriteString("$PhysicalNames\n")
+		sb.WriteString(fmt.Sprintf("%d\n", len(msh.PhysicalNames)))
 		for _, pn := range msh.PhysicalNames {
-			out += fmt.Sprintf("%v %d \"%s\"\n",
-				pn.Dimension, pn.Tag, pn.Name)
+			sb.WriteString(fmt.Sprintf("%v %d \"%s\"\n",
+				pn.Dimension, pn.Tag, pn.Name))
 		}
-		out += "$EndPhysicalNames\n"
+		sb.WriteString("$EndPhysicalNames\n")
 	}
 	if 0 < len(msh.Nodes) {
-		out += "$Nodes\n"
-		out += fmt.Sprintf("%d\n", len(msh.Nodes))
+		sb.WriteString("$Nodes\n")
+		sb.WriteString(fmt.Sprintf("%d\n", len(msh.Nodes)))
 		for _, n := range msh.Nodes {
-			out += fmt.Sprintf("%d %f %f %f\n",
-				n.Id, n.Coord[0], n.Coord[1], n.Coord[2])
+			sb.WriteString(fmt.Sprintf("%d %f %f %f\n",
+				n.Id, n.Coord[0], n.Coord[1], n.Coord[2]))
 		}
-		out += "$EndNodes\n"
+		sb.WriteString("$EndNodes\n")
 	}
 	if 0 < len(msh.Elements) {
-		out += "$Elements\n"
-		out += fmt.Sprintf("%d\n", len(msh.Elements))
+		sb.WriteString("$Elements\n")
+		sb.WriteString(fmt.Sprintf("%d\n", len(msh.Elements)))
 		for _, el := range msh.Elements {
-			out += fmt.Sprintf("%d %d ", el.Id, el.EType)
-			out += fmt.Sprintf("%d", len(el.Tags))
+			sb.WriteString(fmt.Sprintf("%d %d ", el.Id, el.EType))
+			sb.WriteString(fmt.Sprintf("%d", len(el.Tags)))
 			for _, t := range el.Tags {
-				out += fmt.Sprintf(" %d", t)
+				sb.WriteString(fmt.Sprintf(" %d", t))
 			}
 			for _, np := range el.NodeId {
-				out += fmt.Sprintf(" %d", np)
+				sb.WriteString(fmt.Sprintf(" %d", np))
 			}
-			out += "\n"
+			sb.WriteString("\n")
 		}
-		out += "$EndElements\n"
+		sb.WriteString("$EndElements\n")
 	}
-	return out
+	return sb.String()
 }
 
 func New(geoContent string) (m *Msh, err error) {
