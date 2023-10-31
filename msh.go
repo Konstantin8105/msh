@@ -29,6 +29,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -74,6 +75,47 @@ type Msh struct {
 	Elements      []Element
 }
 
+// AddMesh add mesh
+func (msh *Msh) AddMsh(src Msh) {
+	maxNode := msh.MaxNodeIndex()
+	maxElement := msh.MaxElementIndex()
+	// nodes
+	for i := range src.Nodes {
+		src.Nodes[i].Id += maxNode
+	}
+	msh.Nodes = append(msh.Nodes, src.Nodes...)
+	// elements
+	for i := range src.Elements {
+		for j := range src.Elements[i].NodeId {
+			src.Elements[i].NodeId[j] += maxNode
+		}
+		src.Elements[i].Id += maxElement
+	}
+	msh.Elements = append(msh.Elements, src.Elements...)
+	// physical names
+	msh.PhysicalNames = append(msh.PhysicalNames, src.PhysicalNames...)
+}
+
+func (msh *Msh) MaxNodeIndex() int {
+	maxIndex := -math.MaxInt
+	for i := range msh.Nodes {
+		if index := msh.Nodes[i].Id; maxIndex < index {
+			maxIndex = index
+		}
+	}
+	return maxIndex
+}
+
+func (msh *Msh) MaxElementIndex() int {
+	maxIndex := -math.MaxInt
+	for i := range msh.Elements {
+		if index := msh.Elements[i].Id; maxIndex < index {
+			maxIndex = index
+		}
+	}
+	return maxIndex
+}
+
 func (msh *Msh) Sort(ets ...ElementType) {
 	pos := func(et ElementType) int {
 		for i := range ets {
@@ -104,12 +146,7 @@ func (msh *Msh) RemoveElements(ets ...ElementType) {
 }
 
 func (msh *Msh) Index1() {
-	maxIndex := 0
-	for _, n := range msh.Nodes {
-		if maxIndex < n.Id {
-			maxIndex = n.Id
-		}
-	}
+	maxIndex := msh.MaxNodeIndex()
 	newId := make([]int, maxIndex+1)
 	for id, n := range msh.Nodes {
 		newId[n.Id] = id + 1
