@@ -98,20 +98,30 @@ func (msh *Msh) AddMsh(src Msh) {
 
 func (msh *Msh) MaxNodeIndex() int {
 	maxIndex := -math.MaxInt
+	found := false
 	for i := range msh.Nodes {
 		if index := msh.Nodes[i].Id; maxIndex < index {
+			found = true
 			maxIndex = index
 		}
+	}
+	if !found {
+		maxIndex = 0
 	}
 	return maxIndex
 }
 
 func (msh *Msh) MaxElementIndex() int {
 	maxIndex := -math.MaxInt
+	found := false
 	for i := range msh.Elements {
 		if index := msh.Elements[i].Id; maxIndex < index {
+			found = true
 			maxIndex = index
 		}
+	}
+	if !found {
+		maxIndex = 0
 	}
 	return maxIndex
 }
