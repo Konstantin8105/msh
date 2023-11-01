@@ -37,6 +37,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/Konstantin8105/reindex"
 )
 
 var GmshApp = flag.String("gmsh", "", "Example:\n`gmsh` for Linux\n`gmsh.exe` for Windows")
@@ -75,25 +77,86 @@ type Msh struct {
 	Elements      []Element
 }
 
-// AddMesh add mesh
-func (msh *Msh) AddMsh(src Msh) {
-	maxNode := msh.MaxNodeIndex()
-	maxElement := msh.MaxElementIndex()
+func (src Msh) Clone() Msh {
+	var dst Msh
+	// physical names
+	dst.PhysicalNames = append([]PhysicalName{}, src.PhysicalNames...)
 	// nodes
+	dst.Nodes = make([]Node, len(src.Nodes))
 	for i := range src.Nodes {
-		src.Nodes[i].Id += maxNode
+		var n Node
+		n.Id = src.Nodes[i].Id
+		n.Coord = src.Nodes[i].Coord
+		dst.Nodes[i] = n
+	}
+	// elements
+	dst.Elements = make([]Element, len(src.Elements))
+	for i := range src.Elements {
+		var el Element
+		el.Id = src.Elements[i].Id
+		el.EType = src.Elements[i].EType
+		el.Tags = append([]int{}, src.Elements[i].Tags...)
+		el.NodeId = append([]int{}, src.Elements[i].NodeId...)
+		dst.Elements[i] = el
+	}
+	return dst
+}
+
+// AddMesh add mesh
+func (msh *Msh) AddMsh(source Msh) (err error) {
+	src := source.Clone()
+	src.Index1()
+
+	// nodes
+	var riNodes reindex.List[int]
+	{
+		counter := msh.MaxNodeIndex() + 1
+		for _, n := range src.Nodes {
+			riNodes.Add(n.Id, counter)
+			counter++
+		}
+	}
+	for i := range src.Nodes {
+		id := &src.Nodes[i].Id
+		*id, err = riNodes.Get(*id)
+		if err != nil {
+			return
+		}
 	}
 	msh.Nodes = append(msh.Nodes, src.Nodes...)
+	sort.Slice(msh.Nodes, func(i, j int) bool {
+		return msh.Nodes[i].Id < msh.Nodes[j].Id
+	})
 	// elements
-	for i := range src.Elements {
-		for j := range src.Elements[i].NodeId {
-			src.Elements[i].NodeId[j] += maxNode
+	var riElements reindex.List[int]
+	{
+		counter := msh.MaxElementIndex() + 1
+		for _, el := range src.Elements {
+			riElements.Add(el.Id, counter)
+			counter++
 		}
-		src.Elements[i].Id += maxElement
+	}
+	for i := range src.Elements {
+		id := &src.Elements[i].Id
+		*id, err = riElements.Get(*id)
+		if err != nil {
+			return
+		}
+		for j := range src.Elements[i].NodeId {
+			id := &src.Elements[i].NodeId[j]
+			*id, err = riNodes.Get(*id)
+			if err != nil {
+				return
+			}
+		}
 	}
 	msh.Elements = append(msh.Elements, src.Elements...)
+	sort.Slice(msh.Elements, func(i, j int) bool {
+		return msh.Elements[i].Id < msh.Elements[j].Id
+	})
 	// physical names
 	msh.PhysicalNames = append(msh.PhysicalNames, src.PhysicalNames...)
+	return
 }
 
 func (msh *Msh) MaxNodeIndex() int {
@@ -155,24 +218,49 @@ func (msh *Msh) RemoveElements(ets ...ElementType) {
 	}
 }
 
-func (msh *Msh) Index1() {
-	maxIndex := msh.MaxNodeIndex()
-	newId := make([]int, maxIndex+1)
-	for id, n := range msh.Nodes {
-		newId[n.Id] = id + 1
-	}
-	for i := range msh.Elements {
-		for j := range msh.Elements[i].NodeId {
-			nid := &msh.Elements[i].NodeId[j]
-			*nid = newId[*nid]
+func (msh *Msh) Index1() (err error) {
+	// reindex nodes
+	var riNodes reindex.List[int]
+	{
+		counter := 1
+		for _, n := range msh.Nodes {
+			riNodes.Add(n.Id, counter)
+			counter++
 		}
 	}
 	for i := range msh.Nodes {
-		msh.Nodes[i].Id = i + 1
+		id := &msh.Nodes[i].Id
+		*id, err = riNodes.Get(*id)
+		if err != nil {
+			return
+		}
 	}
 	for i := range msh.Elements {
-		msh.Elements[i].Id = i + 1
+		for j := range msh.Elements[i].NodeId {
+			id := &msh.Elements[i].NodeId[j]
+			*id, err = riNodes.Get(*id)
+			if err != nil {
+				return
+			}
+		}
 	}
+	// reindex elements
+	var riElements reindex.List[int]
+	{
+		counter := 1
+		for _, el := range msh.Elements {
+			riElements.Add(el.Id, counter)
+			counter++
+		}
+	}
+	for i := range msh.Elements {
+		id := &msh.Elements[i].Id
+		*id, err = riElements.Get(*id)
+		if err != nil {
+			return
+		}
+	}
+	return
 }
 
 func (msh Msh) GetNode(Id int) (index int) {

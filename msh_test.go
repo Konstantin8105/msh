@@ -50,20 +50,58 @@ func tf(file string) string {
 	return filepath.Join("testdata", file)
 }
 
+func TestClone(t *testing.T) {
+	geo := geo()
+
+	mesh1, err := msh.New(geo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	o1 := fmt.Sprintf("%s", mesh1)
+
+	mesh2 := mesh1.Clone()
+	o2 := fmt.Sprintf("%s", mesh2)
+
+	if o1 != o2 {
+		t.Errorf("not same")
+	}
+}
+
+func TestAddMesh(t *testing.T) {
+	geo := geo()
+
+	var buf bytes.Buffer
+	mesh, err := msh.New(geo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Fprintf(&buf, "\nOriginal:\n%s", mesh)
+
+	if err := mesh.AddMsh(*mesh); err != nil {
+		t.Fatal(err)
+	}
+	fmt.Fprintf(&buf, "\nAfter add mesh:\n%s", mesh)
+
+	compare.Test(t, tf("AddMesh"), buf.Bytes())
+}
+
 func TestSort(t *testing.T) {
 	geo := geo()
 
 	var buf bytes.Buffer
 	mesh, err := msh.New(geo)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	fmt.Fprintf(&buf, "\nOriginal:\n%s", mesh)
 
 	// removing
 	fmt.Fprintf(&buf, "---------------\n")
 	mesh.Sort(msh.Triangle, msh.Quadrangle)
-	mesh.Index1()
+	err = mesh.Index1()
+	if err != nil {
+		t.Fatal(err)
+	}
 	fmt.Fprintf(&buf, "\nAfter sort:\n%s", mesh)
 
 	compare.Test(t, tf("Sort"), buf.Bytes())
@@ -82,7 +120,10 @@ func TestRemoveElements(t *testing.T) {
 	// removing
 	fmt.Fprintf(&buf, "---------------\n")
 	mesh.RemoveElements(msh.Point, msh.Line, msh.Tetrahedron)
-	mesh.Index1()
+	err = mesh.Index1()
+	if err != nil {
+		t.Fatal(err)
+	}
 	fmt.Fprintf(&buf, "\nAfter reindex:\n%s", mesh)
 
 	compare.Test(t, tf("RemoveElements"), buf.Bytes())
@@ -123,7 +164,10 @@ again:
 
 	// reindex
 	fmt.Fprintf(&buf, "---------------\n")
-	msh.Index1()
+	err = msh.Index1()
+	if err != nil {
+		t.Fatal(err)
+	}
 	fmt.Fprintf(&buf, "\nAfter reindex:\n%s", msh)
 
 	compare.Test(t, tf("Index1"), buf.Bytes())
