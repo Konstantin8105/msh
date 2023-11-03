@@ -85,6 +85,28 @@ func TestAddMesh(t *testing.T) {
 	compare.Test(t, tf("AddMesh"), buf.Bytes())
 }
 
+func TestMergeNodes (t *testing.T) {
+	geo := geo()
+
+	var buf bytes.Buffer
+	mesh, err := msh.New(geo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Fprintf(&buf, "\nOriginal:\n%s", mesh)
+
+	clone := mesh.Clone()
+	for i := range clone.Nodes{
+		clone.Nodes[i].Id += 100000
+	}
+	mesh.Nodes = append(mesh.Nodes, clone.Nodes...)
+
+	mesh.MergeNodes(0.0001)
+	fmt.Fprintf(&buf, "\nAfter add mesh:\n%s", mesh)
+
+	compare.Test(t, tf("MergeNodes"), buf.Bytes())
+}
+
 func TestSort(t *testing.T) {
 	geo := geo()
 
