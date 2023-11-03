@@ -38,6 +38,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Konstantin8105/gog"
 	"github.com/Konstantin8105/reindex"
 )
 
@@ -68,13 +69,55 @@ type Element struct {
 
 type Node struct {
 	Id    int
-	Coord [3]float64
+	Coord gog.Point3d
 }
 
 type Msh struct {
 	PhysicalNames []PhysicalName
 	Nodes         []Node
 	Elements      []Element
+}
+
+func (msh *Msh) MergeNodes(minDistance float64) {
+	if minDistance < 0.0 {
+		return
+	}
+	if minDistance == 0.0 {
+		minDistance = gog.Eps3D
+	}
+	for iter := 0; iter < 1000; iter++ {
+		found := false
+		for i := range msh.Nodes {
+			for j := range msh.Nodes {
+				if j <= i {
+					continue
+				}
+				d := gog.Distance3d(msh.Nodes[i].Coord, msh.Nodes[j].Coord)
+				if minDistance < d {
+					continue
+				}
+				from := msh.Nodes[i].Id
+				to := msh.Nodes[j].Id
+				found = true
+				// change nodes id in elements
+				for i := range msh.Elements {
+					list := &msh.Elements[i].NodeId
+					for k := range *list {
+						if (*list)[k] == from {
+							(*list)[k] = to
+							break
+						}
+					}
+				}
+				msh.Nodes = append(msh.Nodes[:i], msh.Nodes[i+1:]...)
+				break
+			}
+		}
+		if !found {
+			return
+		}
+	}
+	msh.Index1()
 }
 
 func (src Msh) Clone() Msh {
